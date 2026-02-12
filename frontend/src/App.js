@@ -46,8 +46,9 @@ const GameContent = () => {
   };
 
   const handleHome = () => {
-    setShowSetup(true);
-  };
+  setShowSetup(true);
+  startNewGame(); // reset game state so GameOverModal closes
+};
 
   return (
     <ThemeProvider currentTheme={theme}>

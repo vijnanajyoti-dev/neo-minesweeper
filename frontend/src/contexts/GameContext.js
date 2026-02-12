@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import analytics from '@/utils/analytics';
 import { storage } from '@/utils/storage';
 import adManager from '@/utils/adManager';
@@ -84,6 +84,8 @@ export const GameProvider = ({ children }) => {
   const [soundEnabled, setSoundEnabled] = useState(preferences.soundEnabled);
   const [flagMode, setFlagMode] = useState(false);
   const [gameStartTime, setGameStartTime] = useState(null);
+  const hasSavedResult = useRef(false);
+
 
   // Timer effect
   useEffect(() => {
@@ -117,6 +119,7 @@ export const GameProvider = ({ children }) => {
     
     setTheme(selectedTheme);
     setDifficulty(selectedDifficulty);
+    hasSavedResult.current = false;
     setGridSize(size);
     setGrid(createEmptyGrid(rows, cols));
     setGameStatus('playing');
@@ -200,32 +203,46 @@ export const GameProvider = ({ children }) => {
         }
       }
       
-      if (unrevealedCount === 0) {
-        setGameStatus('won');
-        const playTime = Math.floor((Date.now() - gameStartTime) / 1000);
-        analytics.trackGameEnd(difficulty, true, playTime);
-        storage.saveLeaderboardEntry(difficulty, playTime, gridSize);
-      }
+if (unrevealedCount === 0 && !hasSavedResult.current) {
+  hasSavedResult.current = true;
+
+  setGameStatus('won');
+
+  const playTime = Math.floor((Date.now() - gameStartTime) / 1000);
+
+  analytics.trackGameEnd(difficulty, true, playTime);
+  storage.saveLeaderboardEntry(difficulty, playTime, gridSize);
+}
       
       return newGrid;
     });
   }, [gameStatus, firstClick, mineCount, gameStartTime, difficulty, gridSize]);
 
   const toggleFlag = useCallback((row, col) => {
-    if (gameStatus !== 'playing') return;
-    
-    setGrid(prevGrid => {
-      const newGrid = prevGrid.map(r => r.map(c => ({ ...c })));
-      const cell = newGrid[row][col];
-      
-      if (cell.isRevealed) return prevGrid;
-      
-      cell.isFlagged = !cell.isFlagged;
-      setFlagCount(prev => cell.isFlagged ? prev + 1 : prev - 1);
-      
-      return newGrid;
-    });
-  }, [gameStatus]);
+  if (gameStatus !== 'playing') return;
+
+  setGrid(prevGrid => {
+    const newGrid = prevGrid.map(r => r.map(c => ({ ...c })));
+    const cell = newGrid[row][col];
+
+    if (cell.isRevealed) return prevGrid;
+
+    // Toggle flag
+    cell.isFlagged = !cell.isFlagged;
+
+    // Recalculate flags safely
+    let count = 0;
+    for (let r = 0; r < newGrid.length; r++) {
+      for (let c = 0; c < newGrid[0].length; c++) {
+        if (newGrid[r][c].isFlagged) count++;
+      }
+    }
+
+    setFlagCount(count);
+
+    return newGrid;
+  });
+}, [gameStatus]);
 
   const value = {
     theme,

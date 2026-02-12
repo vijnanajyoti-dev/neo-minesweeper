@@ -12,11 +12,12 @@ export const SetupModal = ({ isOpen, onClose, onStart }) => {
   const [customMode, setCustomMode] = useState(false);
 
   const handleDifficultyChange = (diff) => {
-    setSelectedDifficulty(diff);
-    if (!customMode) {
-      setGridSize(DIFFICULTIES[diff].gridSize);
-    }
-  };
+  setSelectedDifficulty(diff);
+
+  // Reset to preset size when difficulty changes
+  setGridSize(DIFFICULTIES[diff].gridSize);
+  setCustomMode(false);
+};
 
   const handleStart = () => {
     onStart(gridSize, selectedTheme, selectedDifficulty);
@@ -25,7 +26,7 @@ export const SetupModal = ({ isOpen, onClose, onStart }) => {
 
   const handleSizeChange = (e) => {
     const value = parseInt(e.target.value);
-    if (value >= 8 && value <= 30) {
+    if (value >= 8 && value <= 16) {
       setGridSize(value);
       setCustomMode(true);
     }
@@ -83,9 +84,6 @@ export const SetupModal = ({ isOpen, onClose, onStart }) => {
                         <div className="text-lg font-bold text-[#FAFAFA] mb-1">
                           {config.name}
                         </div>
-                        <div className="text-xs text-[#A1A1AA]">
-                          {config.gridSize}×{config.gridSize}
-                        </div>
                         <div className="text-xs text-[#A1A1AA] mt-1">
                           {Math.floor(config.gridSize * config.gridSize * config.mineRatio)} mines
                         </div>
@@ -116,14 +114,14 @@ export const SetupModal = ({ isOpen, onClose, onStart }) => {
                   data-testid="grid-size-input"
                   type="range"
                   min="8"
-                  max="30"
+                  max="16"
                   value={gridSize}
                   onChange={handleSizeChange}
                   className="w-full h-2 bg-[#27272A] rounded-lg appearance-none cursor-pointer slider"
                 />
                 <div className="flex justify-between text-xs text-[#A1A1AA] mt-1">
                   <span>8×8 (Min)</span>
-                  <span>30×30 (Max)</span>
+                  <span>16×16 (Max)</span>
                 </div>
               </div>
 
